@@ -1,16 +1,15 @@
-version: '3'
+version: "3"
 
 services:
-
   app:
     build:
       context: app
     container_name: app
-    tty: true
     volumes:
       - ./app:/usr/src/app
     depends_on:
-      - database
+      database:
+        condition: "service_healthy"
 
   nginx:
     image: nginx:latest
@@ -29,10 +28,15 @@ services:
     restart: always
     tty: true
     volumes:
-      - mysql:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d/
+      - ./mysql:/var/lib/mysql/
     environment:
       - MYSQL_DATABASE=nodedb
       - MYSQL_ROOT_PASSWORD=root
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
 volumes:
   mysql:
